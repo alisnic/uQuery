@@ -7,14 +7,14 @@ var uQuery = function (nodes) {
   var self = {nodes: nodes};
 
   self.attr = function (name, value) {
-    if (!nodes.length) return;
-
     if (value === undefined) {
       return nodes[0].getAttribute(name);
     } else {
-      return each.call(nodes, function (el) {
+      each.call(nodes, function (el) {
         el.setAttribute(name, value);
       });
+
+      return self;
     }
   };
 
@@ -23,7 +23,7 @@ var uQuery = function (nodes) {
   };
 
   self.children = function (selector) {
-    if (!nodes.length) return [];
+    if (!nodes.length) return new uQuery([]);
 
     if (selector === undefined) {
       return new uQuery(nodes[0].childNodes);
@@ -33,6 +33,8 @@ var uQuery = function (nodes) {
   };
 
   self.first = function (selector) {
+    if (!nodes.length) return self;
+
     if (selector === undefined) {
       return new uQuery([nodes[0]]);
     } else {
@@ -41,7 +43,8 @@ var uQuery = function (nodes) {
   };
 
   self.each = function (callback) {
-    return each.call(nodes, callback);
+    each.call(nodes, callback);
+    return self;
   };
 
   self.filter = function (callback) {
@@ -49,6 +52,7 @@ var uQuery = function (nodes) {
   };
 
   self.hasClass = function (name) {
+    if (!nodes.length) return false;
     var classes = self.class();
     if (classes === undefined || classes === null) return false;
     return classes.indexOf(name) > -1;
@@ -59,6 +63,16 @@ var uQuery = function (nodes) {
       return nodes[0].innerHTML;
     } else {
       nodes[0].innerHTML = value;
+      return self;
+    }
+  };
+
+  self.text = function (value) {
+    if (value === undefined) {
+      return nodes[0].textContent;
+    } else {
+      nodes[0].textContent = value;
+      return self;
     }
   };
 
