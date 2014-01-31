@@ -5,7 +5,8 @@
 var each    = Array.prototype.forEach,
     filter  = Array.prototype.filter,
     every   = Array.prototype.every,
-    some    = Array.prototype.some;
+    some    = Array.prototype.some,
+    map     = Array.prototype.map;
 
 var nil = function (object) {
   return object === undefined || object === null;

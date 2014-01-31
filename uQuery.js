@@ -8,7 +8,8 @@
 var each    = Array.prototype.forEach,
     filter  = Array.prototype.filter,
     every   = Array.prototype.every,
-    some    = Array.prototype.some;
+    some    = Array.prototype.some,
+    map     = Array.prototype.map;
 
 var nil = function (object) {
   return object === undefined || object === null;
@@ -29,6 +30,77 @@ var include = function (nodes, el) {
 
 var uQuery = function (nodes) {
   this.nodes = nodes;
+};
+
+uQuery.prototype.attr = function (name, value) {
+  if (nil(value)) {
+    if (!this.nodes.length) return;
+    return this.nodes[0].getAttribute(name);
+  } else {
+    each.call(this.nodes, function (el) {
+      el.setAttribute(name, value);
+    });
+
+    return this;
+  }
+};
+
+uQuery.prototype.children = function (selector) {
+  if (!this.nodes.length) return new uQuery([]);
+
+  var matchingChildren = filter.call(this.nodes[0].childNodes, function (el) {
+    return el.nodeName !== '#text' && (nil(selector) || matches(el, selector));
+  });
+
+  return new uQuery(matchingChildren);
+};
+
+uQuery.prototype.class = function (value) {
+  return this.attr('class', value);
+};
+
+uQuery.prototype.clone = function () {
+  return new uQuery(map.call(this.nodes, function (el) {
+    return el.cloneNode(true);
+  }));
+};
+
+uQuery.prototype.each = function (callback) {
+  each.call(nodes, callback);
+  return this;
+};
+
+uQuery.prototype.filter = function (query) {
+  if (typeof query === 'string' ) {
+    return new uQuery(filter.call(this.nodes, function (el) {
+      return matches(el, query);
+    }));
+  } else if (typeof query === 'function') {
+    return new uQuery(filter.call(this.nodes, query));
+  } else {
+    return this;
+  }
+};
+
+uQuery.prototype.first = function (selector) {
+  if (!this.nodes.length) return this;
+  return new uQuery([this.nodes[0]]);
+};
+
+uQuery.prototype.hasClass = function (name) {
+  if (!nodes.length) return false;
+  var classes = this.class();
+  if (nil(classes)) return false;
+  return classes.indexOf(name) > -1;
+};
+
+uQuery.prototype.html = function (value) {
+  if (nil(value)) {
+    return this.nodes[0].innerHTML;
+  } else {
+    this.nodes[0].innerHTML = value;
+    return this;
+  }
 };
 
 uQuery.prototype.is = function (target) {
@@ -55,21 +127,9 @@ uQuery.prototype.isnt = function (target) {
 };
 uQuery.prototype.arent = uQuery.prototype.isnt;
 
-uQuery.prototype.attr = function (name, value) {
-  if (value === undefined) {
-    if (!this.nodes.length) return;
-    return this.nodes[0].getAttribute(name);
-  } else {
-    each.call(this.nodes, function (el) {
-      el.setAttribute(name, value);
-    });
-
-    return this;
-  }
-};
-
-uQuery.prototype.class = function (value) {
-  return this.attr('class', value);
+uQuery.prototype.last = function (selector) {
+  if (!this.nodes.length) return this;
+  return new uQuery([this.nodes[this.nodes.length-1]]);
 };
 
 uQuery.prototype.parent = function () {
@@ -85,59 +145,6 @@ uQuery.prototype.siblings = function (selector) {
   });
 };
 
-uQuery.prototype.children = function (selector) {
-  if (!this.nodes.length) return new uQuery([]);
-
-  var matchingChildren = filter.call(this.nodes[0].childNodes, function (el) {
-    return el.nodeName !== '#text' && (nil(selector) || matches(el, selector));
-  });
-
-  return new uQuery(matchingChildren);
-};
-
-uQuery.prototype.first = function (selector) {
-  if (!this.nodes.length) return this;
-  return new uQuery([this.nodes[0]]);
-};
-
-uQuery.prototype.last = function (selector) {
-  if (!this.nodes.length) return this;
-  return new uQuery([this.nodes[this.nodes.length-1]]);
-};
-
-uQuery.prototype.each = function (callback) {
-  each.call(nodes, callback);
-  return this;
-};
-
-uQuery.prototype.filter = function (query) {
-  if (typeof query === 'string' ) {
-    return new uQuery(filter.call(this.nodes, function (el) {
-      return matches(el, query);
-    }));
-  } else if (typeof query === 'function') {
-    return new uQuery(filter.call(this.nodes, query));
-  } else {
-    return this;
-  }
-};
-
-uQuery.prototype.hasClass = function (name) {
-  if (!nodes.length) return false;
-  var classes = this.class();
-  if (nil(classes)) return false;
-  return classes.indexOf(name) > -1;
-};
-
-uQuery.prototype.html = function (value) {
-  if (nil(value)) {
-    return this.nodes[0].innerHTML;
-  } else {
-    this.nodes[0].innerHTML = value;
-    return this;
-  }
-};
-
 uQuery.prototype.text = function (value) {
   if (nil(value)) {
     return nodes[0].textContent;
@@ -147,16 +154,16 @@ uQuery.prototype.text = function (value) {
   }
 };
 
-//Siblings
 //CSS
 //addClass
 //removeClass
 //prepend
+//prependTo
 //append
+//appendTo
 //offset
 //empty
 //remove
-//clone
 //before
 //after
 //show
