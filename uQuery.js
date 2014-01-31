@@ -3,80 +3,133 @@
 
 (function (exports) {
 
-"use strict"
+"use strict";
 
 var each    = Array.prototype.forEach,
-    filter  = Array.prototype.filter;
+    filter  = Array.prototype.filter,
+    every   = Array.prototype.every;
+
+var matches = function(el, selector) {
+  var fun = (
+    el.matches || el.matchesSelector || el.msMatchesSelector ||
+    el.mozMatchesSelector || el.webkitMatchesSelector ||
+  el.oMatchesSelector);
+
+  return fun.call(el, selector);
+};
 
 var uQuery = function (nodes) {
-  var self = {nodes: nodes};
-self.attr = function (name, value) {
-  if (value === undefined) {
-    return nodes[0].getAttribute(name);
+  this.nodes = nodes;
+};
+
+uQuery.prototype.is = function (target) {
+  if (typeof target === 'string') {
+    return every.call(this.nodes, function (el) {
+      return matches(el, target);
+    });
   } else {
-    each.call(nodes, function (el) {
+    if (target instanceof uQuery) {
+      if (this.nodes.length !== target.nodes.length) return false;
+
+      return every.call(this.nodes, function (el, i) {
+        return el === target.nodes[i];
+      });
+    } else {
+      return false;
+    }
+  }
+};
+uQuery.prototype.are = uQuery.prototype.is;
+
+uQuery.prototype.isnt = function (target) {
+  return !this.is(target);
+};
+uQuery.prototype.arent = uQuery.prototype.isnt;
+
+uQuery.prototype.attr = function (name, value) {
+  if (value === undefined) {
+    if (!this.nodes.length) return;
+    return this.nodes[0].getAttribute(name);
+  } else {
+    each.call(this.nodes, function (el) {
       el.setAttribute(name, value);
     });
 
-    return self;
+    return this;
   }
 };
 
-self.class = function (value) {
-  return self.attr('class', value);
+uQuery.prototype.class = function (value) {
+  return this.attr('class', value);
 };
 
-self.children = function (selector) {
+uQuery.prototype.parent = function () {
+  if (!nodes.length) return this;
+  return new uQuery([nodes[0].parentNode]);
+};
+
+uQuery.prototype.children = function (selector) {
   if (!nodes.length) return new uQuery([]);
 
   if (selector === undefined) {
     return new uQuery(nodes[0].childNodes);
   } else {
-    return new uQuery(nodes[0].querySelectorAll(selector));
+    var matchingChildren = filter.call(nodes[0].childNodes, function (el) {
+      return matches(el, selector);
+    });
+    return new uQuery(matchingChildren);
   }
 };
 
-self.first = function (selector) {
-  if (!nodes.length) return self;
+uQuery.prototype.first = function (selector) {
+  if (!nodes.length) return this;
 
   if (selector === undefined) {
     return new uQuery([nodes[0]]);
   } else {
-    return new uQuery([nodes[0].parentNode]).children(selector).first();
+    return this.parent().children(selector).first();
   }
 };
 
-self.each = function (callback) {
+uQuery.prototype.each = function (callback) {
   each.call(nodes, callback);
-  return self;
+  return this;
 };
 
-self.filter = function (callback) {
-  return new uQuery(filter.call(nodes, callback));
+uQuery.prototype.filter = function (query) {
+  if (typeof query === 'string' ) {
+    return new uQuery(filter.call(this.nodes, function (el) {
+      return matches(el, query);
+    }));
+  } else if (typeof query === 'function') {
+    return new uQuery(filter.call(this.nodes, query));
+  } else {
+    return this;
+  }
 };
 
-self.hasClass = function (name) {
+uQuery.prototype.hasClass = function (name) {
   if (!nodes.length) return false;
-  var classes = self.class();
+  var classes = this.class();
   if (classes === undefined || classes === null) return false;
   return classes.indexOf(name) > -1;
 };
 
-self.html = function (value) {
+uQuery.prototype.html = function (value) {
   if (value === undefined) {
     return nodes[0].innerHTML;
   } else {
     nodes[0].innerHTML = value;
-    return self;
+    return this;
   }
 };
 
-self.text = function (value) {
+uQuery.prototype.text = function (value) {
   if (value === undefined) {
     return nodes[0].textContent;
   } else {
     nodes[0].textContent = value;
-    return self;
+    return this;
   }
 };
 
@@ -96,15 +149,18 @@ self.text = function (value) {
 //after
 //show
 //hide
-
-  return self;
-};
+//find
 
 exports.$ = function (selector) {
   if (typeof selector === 'string') {
     return new uQuery(document.querySelectorAll(selector));
+  } else if (selector.tagName) {
+    return new uQuery([selector])
+  } else if (selector instanceof uQuery){
+    return selector;
   } else {
-    return new uQuery([selector]);
+    return new uQuery([]);
   }
 };
+
 })(window);

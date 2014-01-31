@@ -1,9 +1,21 @@
 (function (exports) {
 
-"use strict"
+"use strict";
 
 var each    = Array.prototype.forEach,
-    filter  = Array.prototype.filter;
+    filter  = Array.prototype.filter,
+    every   = Array.prototype.every;
+
+var matches = function(el, selector) {
+  var fun = (
+    el.matches || el.matchesSelector || el.msMatchesSelector ||
+    el.mozMatchesSelector || el.webkitMatchesSelector ||
+  el.oMatchesSelector);
+
+  return fun.call(el, selector);
+};
 
 var uQuery = function (nodes) {
-  var self = {nodes: nodes};
+  this.nodes = nodes;
+};
+
