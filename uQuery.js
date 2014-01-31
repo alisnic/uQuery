@@ -7,10 +7,11 @@
 
 var each    = Array.prototype.forEach,
     filter  = Array.prototype.filter,
-    every   = Array.prototype.every;
+    every   = Array.prototype.every,
+    some    = Array.prototype.some;
 
 var nil = function (object) {
-  return object === undefined;
+  return object === undefined || object === null;
 };
 
 var matches = function(el, selector) {
@@ -20,6 +21,10 @@ var matches = function(el, selector) {
   el.oMatchesSelector);
 
   return fun.call(el, selector);
+};
+
+var include = function (nodes, el) {
+  return some.call(nodes, function (n) { return n == el; });
 };
 
 var uQuery = function (nodes) {
@@ -76,9 +81,7 @@ uQuery.prototype.siblings = function (selector) {
   var self = this;
 
   return this.parent().children().filter(function (el) {
-    var $el = $(el);
-    console.log(el, $el.isnt(self));
-    return $el.isnt(self) && (nil(selector) || $el.is(selector));
+    return !include(self.nodes, el) && (nil(selector) || $el.is(selector));
   });
 };
 
@@ -86,7 +89,7 @@ uQuery.prototype.children = function (selector) {
   if (!this.nodes.length) return new uQuery([]);
 
   var matchingChildren = filter.call(this.nodes[0].childNodes, function (el) {
-    return (nil(selector) || matches(el, selector)) && el.nodeName !== '#text';
+    return el.nodeName !== '#text' && (nil(selector) || matches(el, selector));
   });
 
   return new uQuery(matchingChildren);
@@ -94,22 +97,12 @@ uQuery.prototype.children = function (selector) {
 
 uQuery.prototype.first = function (selector) {
   if (!this.nodes.length) return this;
-
-  if (nil(selector)) {
-    return new uQuery([this.nodes[0]]);
-  } else {
-    return this.parent().children(selector).first();
-  }
+  return new uQuery([this.nodes[0]]);
 };
 
 uQuery.prototype.last = function (selector) {
   if (!this.nodes.length) return this;
-
-  if (nil(selector)) {
-    return new uQuery([this.nodes[this.nodes.length-1]]);
-  } else {
-    return this.parent().children(selector).last();
-  }
+  return new uQuery([this.nodes[this.nodes.length-1]]);
 };
 
 uQuery.prototype.each = function (callback) {
@@ -132,7 +125,7 @@ uQuery.prototype.filter = function (query) {
 uQuery.prototype.hasClass = function (name) {
   if (!nodes.length) return false;
   var classes = this.class();
-  if (classes === undefined || classes === null) return false;
+  if (nil(classes)) return false;
   return classes.indexOf(name) > -1;
 };
 
@@ -146,7 +139,7 @@ uQuery.prototype.html = function (value) {
 };
 
 uQuery.prototype.text = function (value) {
-  if (value === undefined) {
+  if (nil(value)) {
     return nodes[0].textContent;
   } else {
     nodes[0].textContent = value;
