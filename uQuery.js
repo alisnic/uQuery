@@ -64,21 +64,38 @@ uQuery.prototype.class = function (value) {
 };
 
 uQuery.prototype.parent = function () {
-  if (!nodes.length) return this;
-  return new uQuery([nodes[0].parentNode]);
+  if (!this.nodes.length) return this;
+  return new uQuery([this.nodes[0].parentNode]);
+};
+
+uQuery.prototype.siblings = function (selector) {
+  if (selector === undefined) {
+    return this.parent().children().filter(function (el) {
+      return $(el).isnt(this);
+    });
+  } else {
+    return this.parent().children().filter(function (el) {
+      var $el = $(el);
+      return $el.isnt(this) && $el.is(selector);
+    });
+  }
 };
 
 uQuery.prototype.children = function (selector) {
-  if (!nodes.length) return new uQuery([]);
+  if (!this.nodes.length) return new uQuery([]);
+  var matchingChildren;
 
   if (selector === undefined) {
-    return new uQuery(nodes[0].childNodes);
-  } else {
-    var matchingChildren = filter.call(nodes[0].childNodes, function (el) {
-      return matches(el, selector);
+    matchingChildren = filter.call(this.nodes[0].childNodes, function (el) {
+      return el.nodeName !== '#text';
     });
-    return new uQuery(matchingChildren);
+  } else {
+    matchingChildren = filter.call(this.nodes[0].childNodes, function (el) {
+      return matches(el, selector) && el.nodeName !== '#text';
+    });
   }
+
+  return new uQuery(matchingChildren);
 };
 
 uQuery.prototype.first = function (selector) {
@@ -139,9 +156,7 @@ uQuery.prototype.text = function (value) {
 //removeClass
 //prepend
 //append
-//parent + use in first
 //offset
-//is (selector, other uQuery)
 //empty
 //remove
 //clone
