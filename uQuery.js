@@ -76,6 +76,12 @@ uQuery.prototype.each = function (callback) {
   return this;
 };
 
+uQuery.prototype.empty = function () {
+  return this.each(function (el) {
+    el.innerHTML = '';
+  });
+};
+
 uQuery.prototype.filter = function (query) {
   if (typeof query === 'string' ) {
     return new uQuery(filter.call(this.nodes, function (el) {
@@ -156,6 +162,14 @@ uQuery.prototype.parent = function () {
   return new uQuery([this.nodes[0].parentNode]);
 };
 
+uQuery.prototype.remove = function (selector) {
+  return this.each(function (el) {
+    if (nil(selector) || matches(el, selector)) {
+      el.parentNode.removeChild(el);
+    }
+  });
+};
+
 uQuery.prototype.siblings = function (selector) {
   var self = this;
 
@@ -186,11 +200,8 @@ uQuery.prototype.text = function (value) {
 //append
 //appendTo
 //offset
-//empty
-//remove
 //before
 //after
-//find
 
 exports.$ = function (selector) {
   if (typeof selector === 'string') {
