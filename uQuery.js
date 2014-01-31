@@ -43,11 +43,9 @@ uQuery.prototype.attr = function (name, value) {
     if (!this.length) return;
     return this.nodes[0].getAttribute(name);
   } else {
-    each.call(this.nodes, function (el) {
+    return this.each(function (el) {
       el.setAttribute(name, value);
     });
-
-    return this;
   }
 };
 
@@ -179,8 +177,7 @@ uQuery.prototype.siblings = function (selector) {
 };
 
 uQuery.prototype.show = function () {
-  this.each(function (el) { el.style.display = ''; });
-  return this;
+  return this.each(function (el) { el.style.display = ''; });
 };
 
 uQuery.prototype.text = function (value) {
