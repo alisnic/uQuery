@@ -14,12 +14,9 @@ var nil = function (object) {
 };
 
 var matches = function(el, selector) {
-  var fun = (
-    el.matches || el.matchesSelector || el.msMatchesSelector ||
+  return (el.matches || el.matchesSelector || el.msMatchesSelector ||
     el.mozMatchesSelector || el.webkitMatchesSelector ||
-  el.oMatchesSelector);
-
-  return fun.call(el, selector);
+    el.oMatchesSelector).call(el, selector);
 };
 
 var include = function (nodes, el) {
@@ -35,5 +32,6 @@ var toArray = function (source) {
 
 var uQuery = function (nodes) {
   this.nodes = nodes;
+  this.length = nodes.length;
 };
 

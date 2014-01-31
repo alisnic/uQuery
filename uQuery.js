@@ -17,12 +17,9 @@ var nil = function (object) {
 };
 
 var matches = function(el, selector) {
-  var fun = (
-    el.matches || el.matchesSelector || el.msMatchesSelector ||
+  return (el.matches || el.matchesSelector || el.msMatchesSelector ||
     el.mozMatchesSelector || el.webkitMatchesSelector ||
-  el.oMatchesSelector);
-
-  return fun.call(el, selector);
+    el.oMatchesSelector).call(el, selector);
 };
 
 var include = function (nodes, el) {
@@ -38,11 +35,12 @@ var toArray = function (source) {
 
 var uQuery = function (nodes) {
   this.nodes = nodes;
+  this.length = nodes.length;
 };
 
 uQuery.prototype.attr = function (name, value) {
   if (nil(value)) {
-    if (!this.nodes.length) return;
+    if (!this.length) return;
     return this.nodes[0].getAttribute(name);
   } else {
     each.call(this.nodes, function (el) {
@@ -54,7 +52,7 @@ uQuery.prototype.attr = function (name, value) {
 };
 
 uQuery.prototype.children = function (selector) {
-  if (!this.nodes.length) return new uQuery([]);
+  if (!this.length) return new uQuery([]);
 
   var matchingChildren = filter.call(this.nodes[0].childNodes, function (el) {
     return el.nodeName !== '#text' && (nil(selector) || matches(el, selector));
@@ -99,7 +97,7 @@ uQuery.prototype.find = function (selector) {
 };
 
 uQuery.prototype.first = function (selector) {
-  if (!this.nodes.length) return this;
+  if (!this.length) return this;
   return new uQuery([this.nodes[0]]);
 };
 
@@ -126,7 +124,7 @@ uQuery.prototype.is = function (target) {
     });
   } else {
     if (target instanceof uQuery) {
-      if (this.nodes.length !== target.nodes.length) return false;
+      if (this.length !== target.nodes.length) return false;
 
       return every.call(this.nodes, function (el, i) {
         return el === target.nodes[i];
@@ -149,12 +147,12 @@ uQuery.prototype.isnt = function (target) {
 uQuery.prototype.arent = uQuery.prototype.isnt;
 
 uQuery.prototype.last = function (selector) {
-  if (!this.nodes.length) return this;
-  return new uQuery([this.nodes[this.nodes.length-1]]);
+  if (!this.length) return this;
+  return new uQuery([this.nodes[this.length-1]]);
 };
 
 uQuery.prototype.parent = function () {
-  if (!this.nodes.length) return this;
+  if (!this.length) return this;
   return new uQuery([this.nodes[0].parentNode]);
 };
 
