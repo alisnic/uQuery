@@ -23,7 +23,7 @@ var matches = function(el, selector) {
 };
 
 var include = function (nodes, el) {
-  return some.call(nodes, function (n) { return n == el; });
+  return some.call(nodes, function (n) { return n === el; });
 };
 
 var toArray = function (source) {
@@ -36,6 +36,51 @@ var toArray = function (source) {
 var uQuery = function (nodes) {
   this.nodes = nodes;
   this.length = nodes.length;
+};
+
+exports.$ = function (selector) {
+  if (typeof selector === 'string') {
+    if (/<[a-z][\s\S]*>/i.test(selector)) {
+      var div = document.createElement('div');
+      div.innerHTML = selector;
+      return new uQuery(div.childNodes);
+    } else {
+      return new uQuery(document.querySelectorAll(selector));
+    }
+  } else if (selector.tagName) {
+    return new uQuery([selector]);
+  } else if (selector instanceof uQuery){
+    return selector;
+  } else {
+    return new uQuery([]);
+  }
+};
+
+uQuery.prototype.append = function () {
+  var args = arguments;
+  console.log(args);
+
+  this.each(function (el) {
+    each.call(args, function (target) {
+      console.log('appending', el, target);
+      if (typeof target === 'string') {
+        el.insertAdjacentHTML('beforeend', target);
+      } else {
+        $(target).each(function (tel) {
+          el.appendChild(tel);
+        });
+      }
+    });
+  });
+
+  return this;
+};
+
+uQuery.prototype.appendTo = function (target) {
+  if (nil(target)) return this;
+  console.log($(target));
+  $(target).append(this);
+  return this;
 };
 
 uQuery.prototype.attr = function (name, value) {
@@ -169,11 +214,17 @@ uQuery.prototype.remove = function (selector) {
 };
 
 uQuery.prototype.siblings = function (selector) {
-  var self = this;
+  var self = this, acc = [];
 
-  return this.parent().children().filter(function (el) {
-    return !include(self.nodes, el) && (nil(selector) || $el.is(selector));
+  this.each(function (el) {
+    var elems = new uQuery(el.parentNode).children().filter(function (el) {
+      return !include(self.nodes, el) && (nil(selector) || $el.is(selector));
+    });
+
+    acc = acc.concat(elems);
   });
+
+  return new uQuery(acc);
 };
 
 uQuery.prototype.show = function () {
@@ -200,16 +251,5 @@ uQuery.prototype.text = function (value) {
 //before
 //after
 
-exports.$ = function (selector) {
-  if (typeof selector === 'string') {
-    return new uQuery(document.querySelectorAll(selector));
-  } else if (selector.tagName) {
-    return new uQuery([selector])
-  } else if (selector instanceof uQuery){
-    return selector;
-  } else {
-    return new uQuery([]);
-  }
-};
 
 })(window);
