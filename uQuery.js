@@ -27,47 +27,66 @@ var include = function (nodes, el) {
 };
 
 var toArray = function (source) {
+  if (source.forEach) return source;
+
   return reduce.call(source, function (acc, el) {
     acc.push(el);
     return acc;
   }, []);
 };
 
-var uQuery = function (nodes) {
+var uQuerySet = function (nodes) {
   this.nodes = nodes;
   this.length = nodes.length;
 };
 
-exports.$ = function (selector) {
+var uQuery = function (selector) {
   if (typeof selector === 'string') {
     if (/<[a-z][\s\S]*>/i.test(selector)) {
       var div = document.createElement('div');
       div.innerHTML = selector;
-      return new uQuery(div.childNodes);
+      return new uQuerySet(div.childNodes);
     } else {
-      return new uQuery(document.querySelectorAll(selector));
+      return new uQuerySet(document.querySelectorAll(selector));
     }
   } else if (selector.tagName) {
-    return new uQuery([selector]);
-  } else if (selector instanceof uQuery){
+    return new uQuerySet([selector]);
+  } else if (selector instanceof NodeList) {
+    return new uQuerySet(selector);
+  } else if (selector instanceof uQuerySet) {
     return selector;
   } else {
-    return new uQuery([]);
+    return new uQuerySet([]);
   }
 };
 
-uQuery.prototype.append = function () {
+exports.$ = uQuery;
+uQuerySet.prototype.push = function (el) {
+  this.nodes = toArray(this.nodes);
+  this.nodes.push(el);
+  this.length++;
+  return this;
+};
+
+uQuerySet.prototype.append = function () {
   var args = arguments;
-  console.log(args);
 
   this.each(function (el) {
     each.call(args, function (target) {
-      console.log('appending', el, target);
       if (typeof target === 'string') {
         el.insertAdjacentHTML('beforeend', target);
       } else {
-        $(target).each(function (tel) {
-          el.appendChild(tel);
+        var $target = $(target);
+
+        $target.each(function (tel) {
+          var node = tel;
+
+          if (tel.parentNode) {
+            node = tel.cloneNode(true);
+            $target.push(node);
+          }
+
+          el.appendChild(node);
         });
       }
     });
@@ -76,14 +95,13 @@ uQuery.prototype.append = function () {
   return this;
 };
 
-uQuery.prototype.appendTo = function (target) {
+uQuerySet.prototype.appendTo = function (target) {
   if (nil(target)) return this;
-  console.log($(target));
-  $(target).append(this);
-  return this;
+  var $target = $(target);
+  return this.each(function (el) { $target.append(el); });
 };
 
-uQuery.prototype.attr = function (name, value) {
+uQuerySet.prototype.attr = function (name, value) {
   if (nil(value)) {
     if (!this.length) return;
     return this.nodes[0].getAttribute(name);
@@ -94,70 +112,70 @@ uQuery.prototype.attr = function (name, value) {
   }
 };
 
-uQuery.prototype.children = function (selector) {
-  if (!this.length) return new uQuery([]);
+uQuerySet.prototype.children = function (selector) {
+  if (!this.length) return new uQuerySet([]);
 
   var matchingChildren = filter.call(this.nodes[0].childNodes, function (el) {
     return el.nodeName !== '#text' && (nil(selector) || matches(el, selector));
   });
 
-  return new uQuery(matchingChildren);
+  return new uQuerySet(matchingChildren);
 };
 
-uQuery.prototype.class = function (value) {
+uQuerySet.prototype.class = function (value) {
   return this.attr('class', value);
 };
 
-uQuery.prototype.clone = function () {
-  return new uQuery(map.call(this.nodes, function (el) {
+uQuerySet.prototype.clone = function () {
+  return new uQuerySet(map.call(this.nodes, function (el) {
     return el.cloneNode(true);
   }));
 };
 
-uQuery.prototype.each = function (callback) {
+uQuerySet.prototype.each = function (callback) {
   each.call(this.nodes, callback);
   return this;
 };
 
-uQuery.prototype.empty = function () {
+uQuerySet.prototype.empty = function () {
   return this.each(function (el) {
     el.innerHTML = '';
   });
 };
 
-uQuery.prototype.filter = function (query) {
+uQuerySet.prototype.filter = function (query) {
   if (typeof query === 'string' ) {
-    return new uQuery(filter.call(this.nodes, function (el) {
+    return new uQuerySet(filter.call(this.nodes, function (el) {
       return matches(el, query);
     }));
   } else if (typeof query === 'function') {
-    return new uQuery(filter.call(this.nodes, query));
+    return new uQuerySet(filter.call(this.nodes, query));
   } else {
     return this;
   }
 };
 
-uQuery.prototype.find = function (selector) {
-  if (nil(selector)) return new uQuery([]);
+uQuerySet.prototype.find = function (selector) {
+  if (nil(selector)) return new uQuerySet([]);
   var elements = reduce.call(this.nodes, function (acc, el) {
     return acc.concat(toArray(el.querySelectorAll(selector)));
   }, []);
-  return new uQuery(elements);
+  return new uQuerySet(elements);
 };
 
-uQuery.prototype.first = function (selector) {
+uQuerySet.prototype.first = function (selector) {
   if (!this.length) return this;
-  return new uQuery([this.nodes[0]]);
+  return new uQuerySet([this.nodes[0]]);
 };
 
-uQuery.prototype.hasClass = function (name) {
+uQuerySet.prototype.hasClass = function (name) {
   if (!nodes.length) return false;
   var classes = this.class();
   if (nil(classes)) return false;
   return classes.indexOf(name) > -1;
 };
 
-uQuery.prototype.html = function (value) {
+uQuerySet.prototype.html = function (value) {
   if (nil(value)) {
     return this.nodes[0].innerHTML;
   } else {
@@ -166,13 +184,13 @@ uQuery.prototype.html = function (value) {
   }
 };
 
-uQuery.prototype.is = function (target) {
+uQuerySet.prototype.is = function (target) {
   if (typeof target === 'string') {
     return every.call(this.nodes, function (el) {
       return matches(el, target);
     });
   } else {
-    if (target instanceof uQuery) {
+    if (target instanceof uQuerySet) {
       if (this.length !== target.nodes.length) return false;
 
       return every.call(this.nodes, function (el, i) {
@@ -183,29 +201,29 @@ uQuery.prototype.is = function (target) {
     }
   }
 };
-uQuery.prototype.are = uQuery.prototype.is;
+uQuerySet.prototype.are = uQuerySet.prototype.is;
 
-uQuery.prototype.hide = function () {
+uQuerySet.prototype.hide = function () {
   this.each(function (el) { el.style.display = 'none'; });
   return this;
 };
 
-uQuery.prototype.isnt = function (target) {
+uQuerySet.prototype.isnt = function (target) {
   return !this.is(target);
 };
-uQuery.prototype.arent = uQuery.prototype.isnt;
+uQuerySet.prototype.arent = uQuerySet.prototype.isnt;
 
-uQuery.prototype.last = function (selector) {
+uQuerySet.prototype.last = function (selector) {
   if (!this.length) return this;
-  return new uQuery([this.nodes[this.length-1]]);
+  return new uQuerySet([this.nodes[this.length-1]]);
 };
 
-uQuery.prototype.parent = function () {
+uQuerySet.prototype.parent = function () {
   if (!this.length) return this;
-  return new uQuery([this.nodes[0].parentNode]);
+  return new uQuerySet([this.nodes[0].parentNode]);
 };
 
-uQuery.prototype.remove = function (selector) {
+uQuerySet.prototype.remove = function (selector) {
   return this.each(function (el) {
     if (nil(selector) || matches(el, selector)) {
       el.parentNode.removeChild(el);
@@ -213,30 +231,29 @@ uQuery.prototype.remove = function (selector) {
   });
 };
 
-uQuery.prototype.siblings = function (selector) {
+uQuerySet.prototype.siblings = function (selector) {
   var self = this, acc = [];
 
   this.each(function (el) {
-    var elems = new uQuery(el.parentNode).children().filter(function (el) {
+    var elems = new uQuerySet(el.parentNode).children().filter(function (el) {
       return !include(self.nodes, el) && (nil(selector) || $el.is(selector));
     });
 
     acc = acc.concat(elems);
   });
 
-  return new uQuery(acc);
+  return new uQuerySet(acc);
 };
 
-uQuery.prototype.show = function () {
+uQuerySet.prototype.show = function () {
   return this.each(function (el) { el.style.display = ''; });
 };
 
-uQuery.prototype.text = function (value) {
+uQuerySet.prototype.text = function (value) {
   if (nil(value)) {
-    return nodes[0].textContent;
+    return this.nodes[0].textContent;
   } else {
-    nodes[0].textContent = value;
-    return this;
+    return this.each(function (el) { el.textContent = value; });
   }
 };
 
@@ -245,8 +262,6 @@ uQuery.prototype.text = function (value) {
 //removeClass
 //prepend
 //prependTo
-//append
-//appendTo
 //offset
 //before
 //after

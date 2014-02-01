@@ -24,32 +24,37 @@ var include = function (nodes, el) {
 };
 
 var toArray = function (source) {
+  if (source.forEach) return source;
+
   return reduce.call(source, function (acc, el) {
     acc.push(el);
     return acc;
   }, []);
 };
 
-var uQuery = function (nodes) {
+var uQuerySet = function (nodes) {
   this.nodes = nodes;
   this.length = nodes.length;
 };
 
-exports.$ = function (selector) {
+var uQuery = function (selector) {
   if (typeof selector === 'string') {
     if (/<[a-z][\s\S]*>/i.test(selector)) {
       var div = document.createElement('div');
       div.innerHTML = selector;
-      return new uQuery(div.childNodes);
+      return new uQuerySet(div.childNodes);
     } else {
-      return new uQuery(document.querySelectorAll(selector));
+      return new uQuerySet(document.querySelectorAll(selector));
     }
   } else if (selector.tagName) {
-    return new uQuery([selector]);
-  } else if (selector instanceof uQuery){
+    return new uQuerySet([selector]);
+  } else if (selector instanceof NodeList) {
+    return new uQuerySet(selector);
+  } else if (selector instanceof uQuerySet) {
     return selector;
   } else {
-    return new uQuery([]);
+    return new uQuerySet([]);
   }
 };
 
+exports.$ = uQuery;
